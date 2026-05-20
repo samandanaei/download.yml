@@ -22,6 +22,11 @@ on:
         required: false
         type: string
         default: 'video'
+      clear_folder:
+        description: 'Clear downloads folder before downloading?'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -36,6 +41,14 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Clear downloads folder (if selected)
+        if: ${{ github.event.inputs.clear_folder == 'true' }}
+        run: |
+          echo "🗑️ Clearing downloads folder as requested..."
+          rm -rf ${{ github.event.inputs.output_folder }}/
+          mkdir -p ${{ github.event.inputs.output_folder }}/
+          echo "✅ Downloads folder cleared!"
 
       - name: Set up Python
         uses: actions/setup-python@v5
