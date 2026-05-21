@@ -1,0 +1,59 @@
+name: Clear Downloads Folder
+
+on:
+  workflow_dispatch:
+    inputs:
+      output_folder:
+        description: 'Folder to clear'
+        required: false
+        type: string
+        default: 'downloads'
+      confirm_delete:
+        description: 'Type "yes" to confirm deletion'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  clear-folder:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Confirm and clear folder
+        run: |
+          if [ "${{ github.event.inputs.confirm_delete }}" != "yes" ]; then
+            echo "❌ Deletion cancelled. You must type 'yes' to confirm."
+            exit 1
+          fi
+          
+          FOLDER="${{ github.event.inputs.output_folder }}"
+          
+          if [ -d "$FOLDER" ]; then
+            echo "🗑️ Clearing folder: $FOLDER"
+            rm -rf "$FOLDER"/*
+            echo "✅ All files in $FOLDER have been deleted!"
+            
+            # چک کن فولدر خالی شده
+            if [ -z "$(ls -A $FOLDER)" ]; then
+              echo "📁 $FOLDER is now empty"
+            else
+              echo "⚠️ Some files could not be deleted"
+              exit 1
+            fi
+          else
+            echo "📁 Folder $FOLDER does not exist. Creating empty folder..."
+            mkdir -p "$FOLDER"
+          fi
+      
+      - name: Commit and push changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add ${{ github.event.inputs.output_folder }}/
+          git commit -m "Clear downloads folder" || echo "Nothing to commit (folder already empty)"
+          git push
